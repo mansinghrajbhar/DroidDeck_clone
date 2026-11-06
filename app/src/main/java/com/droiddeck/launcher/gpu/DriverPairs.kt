@@ -132,9 +132,15 @@ object DriverPairs {
                 return maliKey(gpu, pairs, sdk)
             else -> Unit
         }
-        val keys = AutoPicks.preferences(gpu, rules, sdk, blob)
-            .ifEmpty { AutoPicks.preferences(gpu, AutoPicks.BUILT_IN, sdk, blob) }
-            .mapNotNull { if (it == AutoPicks.NEWEST_DD_TURNIP) newestDdTurnip(pairs) else it }
+        // Adreno 710 is not covered by the normal Adreno 7xx recommendations.
+        // Prefer the dedicated 710/720 test driver on this device, with DD-Turnip as fallback.
+        val preferences = if (gpu.model == 710) {
+            listOf(BANNER_710, NEWEST_DD_TURNIP)
+        } else {
+            AutoPicks.preferences(gpu, rules, sdk, blob)
+                .ifEmpty { AutoPicks.preferences(gpu, AutoPicks.BUILT_IN, sdk, blob) }
+        }
+        val keys = preferences.mapNotNull { if (it == AutoPicks.NEWEST_DD_TURNIP) newestDdTurnip(pairs) else it }
         return keys.firstOrNull { key -> pairs.any { it.key == key && it.complete && AutoDriverTrial.release(it) !in bad } }
             ?: keys.firstOrNull()
     }
