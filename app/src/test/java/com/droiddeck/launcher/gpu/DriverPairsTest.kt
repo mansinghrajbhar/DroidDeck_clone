@@ -72,6 +72,23 @@ class DriverPairsTest {
     }
 
     @Test
+    fun adreno710PrefersItsDedicatedTestDriverAndFallsBackToDdTurnip() {
+        fun bundle(tag: String) = TurnipReleases.Asset("DroidDeck", tag, "$tag.zip", "https://example/$tag", 6_000_000,
+            false, "Android + Linux", "0".repeat(64), DriverPairs.ddTurnip(tag), bundle = true)
+        val banner710 = listOf(
+            asset("Turnip-r27-710-720-Test.zip", "r27", false, DriverPairs.BANNER_710),
+            asset("Turnip-r27-710-720-Test-Linux.zip", "r27", true, DriverPairs.BANNER_710),
+        )
+        val dd = bundle("DD-Turnip-v0.4.0")
+        val gpu710 = gpu(710)
+        val both = DriverPairs.from(TurnipReleases.Check(banner710 + dd, emptyList(), emptyList(), 0L))
+        assertEquals(DriverPairs.BANNER_710, DriverPairs.recommendedKey(gpu710, both))
+        val fallback = DriverPairs.from(TurnipReleases.Check(listOf(dd), emptyList(), emptyList(), 0L))
+        assertEquals(DriverPairs.ddTurnip("DD-Turnip-v0.4.0"), DriverPairs.recommendedKey(gpu710, fallback))
+        assertEquals(DriverPairs.BANNER_710, DriverPairs.recommendedKey(gpu710, emptyList()))
+    }
+
+    @Test
     fun pairsMatchHalvesAndNeverMixBannersReleases() {
         val check = TurnipReleases.Check(
             listOf(
